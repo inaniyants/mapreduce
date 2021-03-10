@@ -12,11 +12,16 @@ defmodule InputReader do
   def reader(file, partition) do
     case File.read(file) do
       {:ok, body} ->
-        Enum.each(Regex.split(~r/\r|\n|\r\n/, String.trim(body)), fn line ->
+        lines = Regex.split(~r/\r|\n|\r\n/, String.trim(body))
+
+        Enum.each(lines, fn line ->
           spawn(fn -> Mapper.map(line, partition) end)
         end)
 
-        send(partition, {:fulfill, true})
+        mapper_processes_cnt = length(lines)
+        IO.puts("Mapper processes #{mapper_processes_cnt}")
+
+        send(partition, {:fulfill, {true, mapper_processes_cnt}})
 
       {:error, reason} ->
         IO.puts(:stderr, "File Error: #{reason}")
